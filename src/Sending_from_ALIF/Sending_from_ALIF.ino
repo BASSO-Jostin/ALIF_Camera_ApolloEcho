@@ -2,8 +2,12 @@ HardwareSerial Serial2(PA3, PA2);  //Serial for AT Commands to send to the Satel
 HardwareSerial Serial1(PB7, PB6);
 
 String inputBuffer = "";
-String SaveBuffer = "";
+String Buffer = "";
 int packetNumber;
+
+char Savebuffer[128];
+char packet[255];
+int indexBuffer = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -24,31 +28,39 @@ void loop() {
 
     // Line by line checking
     if (c == '\n') {
-      //Serial2.println(inputBuffer);
-      inputBuffer.trim();
+      //inputBuffer.trim();
+      Buffer += inputBuffer;
+
+      if (inputBuffer.startsWith("test_ssdv thread: begin ") || inputBuffer.indexOf("test_ssdv thread: begin ") != -1) {
+        packetNumber = 0;
+        Serial2.println("-------------------------");
+        Serial2.println("Début");
+        Serial2.println("-------------------------");
+      }
 
       // Check if the line is the success
-      if (inputBuffer.startsWith("--> Sending SSDV packet")) {-->
-        SaveBuffer = inputBuffer;
+      if (inputBuffer.startsWith("5566")) {
+        //Serial2.println(packetNumber);
+        //Serial2.println(Buffer);
 
-        int hashIndex = inputBuffer.indexOf('#');
-        if (hashIndex > 0) {
-          packetNumber = inputBuffer.substring(hashIndex + 1).toInt();
+        memset(packet, 0, 255);
 
-          Serial2.println("-----------------------------------------------------------------------------------------------------------------");
-          Serial2.println(packetNumber);
-          Serial2.println("-----------------------------------------------------------------------------------------------------------------");
-        }
+        sprintf(packet, "AT+SEND=%d,0,8,1,%s\r\n", packetNumber, Buffer.c_str());
 
-        // Vérifie si la ligne indique un échec
-        /*if (inputBuffer.indexOf("NOT_SENT:1") != -1 || inputBuffer.indexOf("ERROR") != -1) {
+        Serial2.println(packet);
 
-        return;
-      }*/
-
-        inputBuffer = "";  // Reinitialize for the next line
-        SaveBuffer = "";
+        packetNumber += 1;
       }
+
+      if (inputBuffer.startsWith("test_ssdv thread: end ") || inputBuffer.indexOf("test_ssdv thread: end ") != -1) {
+        packetNumber = 0;
+        Serial2.println("-------------------------");
+        Serial2.println("Fin");
+        Serial2.println("-------------------------");
+      }
+
+      inputBuffer = "";  // Reinitialize for the next line
+      Buffer = "";
     }
   }
 }
