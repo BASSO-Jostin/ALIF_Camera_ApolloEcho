@@ -20,8 +20,8 @@ String inputBuffer = "";
 String Buffer = "";
 int packetNumber;
 
-char Savebuffer[128];
-char packet[255];
+#define PACKET_BUFFER_SIZE 512 // In bytes
+char packet[PACKET_BUFFER_SIZE];
 int indexBuffer = 0;
 
 
@@ -113,11 +113,12 @@ void loop() {
 			if (inputBuffer.startsWith("test_ssdv thread: begin ") || inputBuffer.indexOf("test_ssdv thread: begin ") != -1) {
 				packetNumber = 0;
 
-				if (isJoined()) {
-					Serial2.print("AT+SEND=1,8,11,0,-------------------------");
-					Serial2.print("Beginning");
-					Serial2.print("-------------------------\r\n");
-				}
+				// NOT SENDING, IT COULD MAKE THE CHANNEL BUSY WHEN THE FIST SEGMENT COME
+				// if (isJoined()) {
+				// 	Serial2.print("AT+SEND=1,7,10,0,-------------------------");
+				// 	Serial2.print("Beginning");
+				// 	Serial2.print("-------------------------\r\n");
+				// }
 				Serial1.print("-------------------------");
 				Serial1.print("Beginning");
 				Serial1.print("-------------------------");
@@ -127,9 +128,10 @@ void loop() {
 				//Serial2.println(packetNumber);
 				//Serial2.println(Buffer);
 
-				memset(packet, 0, 255);
+				memset(packet, 0, PACKET_BUFFER_SIZE);
 
-				sprintf(packet, "AT+SEND=1,8,11,0,%s\r\n", Buffer.c_str());
+				snprintf(packet, PACKET_BUFFER_SIZE, "AT+SENDB=1,7,11,0,%.4x%s\r\n", packetNumber, Buffer.c_str());
+				
 
 				if (isJoined()) {
 					Serial2.println(packet);
@@ -143,8 +145,10 @@ void loop() {
 			if (inputBuffer.startsWith("test_ssdv thread: end ") || inputBuffer.indexOf("test_ssdv thread: end ") != -1) {
 				packetNumber = 0;
 
+				// Delay before sending the end message
+				delay(8000);
 				if (isJoined()) {
-					Serial2.print("AT+SEND=1,8,11,0,-------------------------");
+					Serial2.print("AT+SENDB=1,7,12,0,-------------------------");
 					Serial2.print("End");
 					Serial2.print("-------------------------\r\n");
 				}
@@ -163,7 +167,7 @@ bool isJoined(void) {
 	char c;
 	String StatusBuffer = "";
 	StatusBuffer.reserve(32);
-	bool join = 0;
+	bool join = false;
 	Serial2.print("AT+NJS?\r\n");
 
 	uint32_t timeout = millis() + 5000;
@@ -172,14 +176,14 @@ bool isJoined(void) {
 		if (Serial2.available()) {
 			c = Serial2.read();
 
-			StatusBuffer = +c;
+			StatusBuffer += c;
 
 			if (c == '\n') {
 				if (StatusBuffer.indexOf("NJS:1") != -1) {
-					join = 1;
+					join = true;
 					break;
 				} else if (StatusBuffer.indexOf("NJS:0") != -1) {
-					join = 0;
+					join = false;
 					break;
 				}
 
@@ -188,7 +192,7 @@ bool isJoined(void) {
 		}
 	}
 
-	return true;
+	return join;
 
 
 	// String readBuffer;
