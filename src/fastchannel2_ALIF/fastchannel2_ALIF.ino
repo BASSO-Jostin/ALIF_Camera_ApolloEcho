@@ -130,7 +130,7 @@ void loop() {
 
 				memset(packet, 0, PACKET_BUFFER_SIZE);
 
-				snprintf(packet, PACKET_BUFFER_SIZE, "AT+SENDB=1,7,11,0,%.4x%s\r\n", packetNumber, Buffer.c_str());
+				snprintf(packet, PACKET_BUFFER_SIZE, "AT+SENDB=1,8,21,0,%.4x%s\r\n", packetNumber, Buffer.c_str());
 				
 
 				if (isJoined()) {
@@ -148,7 +148,7 @@ void loop() {
 				// Delay before sending the end message
 				delay(8000);
 				if (isJoined()) {
-					Serial2.print("AT+SENDB=1,7,12,0,-------------------------");
+					Serial2.print("AT+SENDB=1,8,22,0,-------------------------");
 					Serial2.print("End");
 					Serial2.print("-------------------------\r\n");
 				}
